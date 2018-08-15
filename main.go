@@ -8,6 +8,7 @@ import (
 	"strings"
 	"sync"
 	"time"
+	//"github.com/jlaffaye/ftp"
 )
 
 var files = []string{
@@ -22,7 +23,7 @@ var files = []string{
 	"http://greengenes.lbl.gov/Download/Sequence_Data/Fasta_data_files/core_set_aligned.fasta.imputed",
 	"http://greengenes.lbl.gov/Download/Sequence_Data/lanemask_in_1s_and_0s",
 	"http://www.microbesonline.org/fasttree/FastTree-2.1.3.c",
-	"http://java.sun.com/javase/downloads/index.jsp",
+	//"http://java.sun.com/javase/downloads/index.jsp",
 	"http://sourceforge.net/projects/rdp-classifier/files/rdp-classifier/rdp_classifier_2.2.zip/download",
 	"https://downloads.sourceforge.net/project/tax2tree/tax2tree-v1.0.tar.gz",
 	"http://mirrors.vbi.vt.edu/mirrors/ftp.ncbi.nih.gov/blast/executables/blast+/2.2.22/ncbi-blast-2.2.22%2B-src.tar.gz",
@@ -53,22 +54,38 @@ func main() {
 	var wg sync.WaitGroup
 
 	httpChannel := make(chan string, 6)
-	//ftpChannel := make(chan string, 6)
+	ftpChannel := make(chan string, 6)
 
 	wg.Add(3)
 	go getHeads(httpChannel, &wg)
 	go getHeads(httpChannel, &wg)
 	go getHeads(httpChannel, &wg)
 
+	wg.Add(2)
+	go getFtpHostFile(ftpChannel, &wg)
+	go getFtpHostFile(ftpChannel, &wg)
+
 	for i, _ := range files {
 		url := files[i]
-		if !strings.HasPrefix(url, "ftp://") {
+		if strings.HasPrefix(url, "ftp://") {
+			ftpChannel <- url
+		} else {
 			httpChannel <- url
 		}
-
 	}
 	close(httpChannel)
+	close(ftpChannel)
 	wg.Wait()
+}
+
+func getFtpHostFile(c chan string, wg *sync.WaitGroup) {
+	defer wg.Done()
+	fmt.Println("*********")
+	for url := range c {
+		host, dir := ftpSplit(url)
+		fmt.Println(url, host, dir)
+
+	}
 }
 
 func getHeads(c chan string, wg *sync.WaitGroup) {
@@ -98,4 +115,12 @@ func getHeads(c chan string, wg *sync.WaitGroup) {
 
 	}
 
+}
+
+func ftpSplit(url string) (host string, dir string) {
+	s := strings.TrimPrefix(url, "ftp://")
+	parts := strings.SplitN(s, "/", 2)
+	host, dir = parts[0], parts[1]
+
+	return host, dir
 }
