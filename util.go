@@ -5,12 +5,19 @@ import (
 	"io"
 	"log"
 	"os"
+	"time"
 )
 
-func writeFile(r io.Reader, filename string) error {
+func writeFile(r io.Reader, filename string, timeCreated time.Time) error {
+	//file, err := os.OpenFile(filename, os.O_RDWR|os.O_CREATE, 0600) // For read access.
 	file, err := os.OpenFile(filename, os.O_RDWR|os.O_CREATE, 0600) // For read access.
 	defer func() {
 		err := file.Close()
+		if err != nil {
+			log.Println(err)
+		}
+		//err = os.Chtimes(filename, time, time)
+		err = os.Chtimes(filename, time.Now(), timeCreated)
 		if err != nil {
 			log.Println(err)
 		}

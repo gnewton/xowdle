@@ -34,13 +34,9 @@ func ftpInfo(host, dir, file string) (exists bool, length int64, e error) {
 	size, err := c.FileSize(dir + file)
 	log.Println("size ", host, dir, file, size)
 
-	//fi, err := c.Stat(file)
-	// fi, err := c.Stat(dir)
-	// if err != nil {
-	// 	log.Println("FTP: Connect stat for host/file:", host, dir, file)
-	// 	return false, -1, err
-	// }
-	//log.Println(fi)
+	if size > 0 && false {
+		return true, size, nil
+	}
 
 	err = c.ChangeDir(dir)
 	if err != nil {
@@ -51,11 +47,15 @@ func ftpInfo(host, dir, file string) (exists bool, length int64, e error) {
 	if err != nil {
 		log.Println("List ", host, dir, file, " ", err)
 	}
+	log.Println("Looking at: ", host, dir, file)
 	if len(entries) != 1 {
-		log.Fatal("File does not exist: ", host, dir, file)
+		//log.Fatal("File does not exist: ", host, dir, file)
+		return false, -1, nil
 	}
 	for i, _ := range entries {
-		log.Println("++++++++++++++   ", entries[i])
+		log.Println(host, "++++++++++++++   ", entries[i])
+		log.Println(host, "++++++++++++++   TIME ", entries[i].Time)
+
 	}
 
 	// Read without deadline
@@ -64,7 +64,7 @@ func ftpInfo(host, dir, file string) (exists bool, length int64, e error) {
 	if err != nil {
 		log.Println("Retrieve ", host, ":", file, " ", err)
 	} else {
-		err := writeFile(r, file)
+		err := writeFile(r, file, entries[0].Time)
 		//_, err := ioutil.ReadAll(r)
 		if err != nil {
 			log.Fatal(err)
@@ -89,13 +89,13 @@ func getFtpInfo(c chan Url, wg *sync.WaitGroup) {
 		host, dir, file := ftpSplit(url)
 		var elapsed time.Duration
 		start := time.Now()
-		_, _, err := ftpInfo(host, dir, file)
+		exists, size, err := ftpInfo(host, dir, file)
 		if err != nil {
 			log.Println("Failed FTP host=", host, err)
 			log.Println(err)
 		}
 		elapsed = time.Since(start)
-		log.Println("host  elapsed ", elapsed)
+		log.Println("@@@@@@@@@@@@@", host, dir, file, "Exists: ", exists, " Size:", size, " Elapsed:", elapsed)
 
 	}
 }

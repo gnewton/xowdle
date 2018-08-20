@@ -10,13 +10,13 @@ import (
 type Url interface {
 	GetUrl() string
 	SetUrl(string)
-	GetLength() int64
+	GetRemoteSize() int64
 	GetSampleTime() time.Duration
 }
 
 type UrlBase struct {
 	url        string
-	length     int64
+	remoteSize int64
 	sampleTime time.Duration
 }
 
@@ -28,8 +28,8 @@ func (u *UrlBase) SetUrl(url string) {
 	u.url = url
 }
 
-func (u *UrlBase) GetLength() int64 {
-	return u.length
+func (u *UrlBase) GetRemoteSize() int64 {
+	return u.remoteSize
 }
 
 func (u *UrlBase) GetSampleTime() time.Duration {
