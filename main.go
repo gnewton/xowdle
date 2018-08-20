@@ -2,11 +2,8 @@ package main
 
 import (
 	//"errors"
-	"fmt"
+	//"context"
 	"log"
-	"net/http"
-	"strings"
-	"sync"
 	//"time"
 	//"github.com/jlaffaye/ftp"
 )
@@ -46,7 +43,7 @@ var files = []string{
 	"http://cran.utstat.utoronto.ca/src/base/R-2/R-2.12.0.tar.gz",
 	// WAS "ftp://169.228.46.98/gg_12_10/gg_12_10_otus.tar.gz",
 	"https://s3.amazonaws.com/gg_sg_web/gg_12_10_otus.tar.gz?AWSAccessKeyId=AKIAIKZRXPOMF7SLT42A&Signature=1m0L03Kfpi6XiB8I6NXKAHX5Ytw%3D&Expires=1534531563",
-	"ftp://greengenes.microbio.me/greengenes_release/gg_12_10/gg_12_10_otus.tar.gz",
+	"ftp://greengenes.microbio.me/greengenes_release/gg_12_10/gg_12_10_otus.tar.gzZZZZ",
 	//"http://gdata-python-client.googlecode.com/files/gdata-2.0.17.tar.gz",
 	"https://files.pythonhosted.org/packages/b2/e0/6e062327b211e9b1c5f30f65a9a65cf49eb1d3a7da3ce42fdc9a9e128535/gdata-2.0.17.tar.gz",
 	// SHA256
@@ -56,99 +53,13 @@ const defaultNumFtpRoutines = 3
 const defaultNumHttpRoutines = 6
 
 func main() {
-	nftp := defaultNumFtpRoutines
-	nhttp := defaultNumHttpRoutines
+
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 
-	var wg sync.WaitGroup
-
-	httpChannel := make(chan string, nhttp)
-	ftpChannel := make(chan string, nftp)
-
-	for i := 0; i < nhttp; i++ {
-		wg.Add(1)
-		go getHeads(httpChannel, &wg)
+	urls, err := newUrls(files)
+	if err != nil {
+		log.Fatal(err)
 	}
+	getHeadInfo(urls)
 
-	for i := 0; i < nftp; i++ {
-		wg.Add(1)
-		go getFtpHostFile(ftpChannel, &wg)
-	}
-
-	for i, _ := range files {
-		url := files[i]
-		if strings.HasPrefix(url, "ftp://") {
-			ftpChannel <- url
-		} else {
-			httpChannel <- url
-		}
-	}
-	close(httpChannel)
-	close(ftpChannel)
-	wg.Wait()
-}
-
-func getFtpHostFile(c chan string, wg *sync.WaitGroup) {
-	defer wg.Done()
-	//fmt.Println("*********")
-	for url := range c {
-		host, dir, file := ftpSplit(url)
-		fmt.Println(url)
-		_, _, err := ftpInfo(host, dir, file)
-		if err != nil {
-			log.Println("Failed FTP host=", host, err)
-			log.Println(err)
-		}
-	}
-}
-
-func getHeads(c chan string, wg *sync.WaitGroup) {
-	defer wg.Done()
-	//fmt.Println("*********")
-	var resp *http.Response
-	var err error
-
-	for url := range c {
-		fmt.Println(url)
-
-		//var elapsed time.Duration
-		for j := 0; j < 5; j++ {
-			//start := time.Now()
-			resp, err = http.Head(url)
-			if err != nil {
-				log.Println("Failed http HEAD on", url, err)
-				continue // or stop
-			}
-			if resp.StatusCode >= 403 { //Forbidden
-				break
-			}
-
-			if resp.StatusCode >= 400 {
-				//err404 := "NOT FOUND 404: " + url
-				log.Println("404 Failed http HEAD on", url, err)
-				break
-				//log.Fatal(errors.New("NOT FOUND 404: " + url))
-			}
-			//elapsed = time.Since(start)
-
-		}
-		if resp != nil {
-			//fmt.Printf("%s  %d %d %d W=%d  Time: %s", elapsed, elapsed/1000000, resp.ContentLength, resp.ContentLength/10000, int64(elapsed/1000000)*(resp.ContentLength/1000), url)
-		}
-		//fmt.Println(resp.ContentLength)
-		//fmt.Printf("%+v\n", resp)
-
-	}
-
-}
-
-func ftpSplit(url string) (host string, dir string, file string) {
-	s := strings.TrimPrefix(url, "ftp://")
-	parts := strings.SplitN(s, "/", 2)
-	host, dir = parts[0], parts[1]
-
-	n := strings.LastIndex(dir, "/")
-	dir = "/" + dir[0:n]
-	file = dir[n+1:]
-	return host, dir, file
 }
