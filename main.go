@@ -53,13 +53,27 @@ const defaultNumFtpRoutines = 3
 const defaultNumHttpRoutines = 6
 
 func main() {
-
+	var err error
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 
 	urls, err := newUrls(files)
 	if err != nil {
 		log.Fatal(err)
 	}
-	getHeadInfo(urls)
+	//getHeadInfo(urls)
+
+
+	for i,_:= range urls{
+		l, err := urls[i].GetRemoteSize()
+		if err != nil{
+			log.Println(err)
+		}
+		log.Println("Size=", l)
+		err = urls[i].SampleTime()
+		if err != nil{
+			log.Println(err)
+		}
+
+	}
 
 }

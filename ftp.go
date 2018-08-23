@@ -8,9 +8,31 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"io"
 )
 
 var m string = "greengenes.microbio.me"
+
+
+type Ftp struct {
+	UrlBase
+}
+
+
+func (f *Ftp) Get() (io.ReadCloser, error){
+     return nil, nil
+}
+
+func (f *Ftp) GetRemoteSize() (int64, error) {
+	return f.remoteSize, nil
+}
+func (f *Ftp) SampleTime() error{
+	return nil
+}
+
+
+
+const anonymous = "anonymous"
 
 func ftpInfo(host, dir, file string) (exists bool, length int64, e error) {
 	//func ftpInfo(host string) (exists bool, length int64, e error) {
@@ -26,7 +48,7 @@ func ftpInfo(host, dir, file string) (exists bool, length int64, e error) {
 		//return false, -1, err
 	}
 
-	err = c.Login("anonymous", "anonymous")
+	err = c.Login(anonymous, anonymous)
 	if err != nil {
 		log.Println("Login ", host, ":", err)
 	}
@@ -85,7 +107,7 @@ func getFtpInfo(c chan Url, wg *sync.WaitGroup) {
 	defer wg.Done()
 	//fmt.Println("*********")
 	for u := range c {
-		url := u.GetUrl()
+		url := u.Url()
 		host, dir, file := ftpSplit(url)
 		var elapsed time.Duration
 		start := time.Now()

@@ -6,7 +6,9 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"errors"
 )
+
 
 func getHeadInfo(urls []Url) error {
 	nftp := defaultNumFtpRoutines
@@ -29,7 +31,7 @@ func getHeadInfo(urls []Url) error {
 
 	for i, _ := range urls {
 		url := urls[i]
-		u := url.GetUrl()
+		u := url.Url()
 
 		if strings.HasPrefix(u, "ftp://") {
 			ftpChannel <- url
@@ -44,6 +46,20 @@ func getHeadInfo(urls []Url) error {
 	return nil
 }
 
+
+func getHead(url string)(*http.Response, error){
+	resp, err := http.Head(url)
+	if err != nil{
+		return nil, err
+	}else{
+		if resp.StatusCode == 200{
+			return resp, nil
+		}else{
+			return nil, errors.New("Response code is not 200; is:" + resp.Status)			
+		}
+	}
+}
+
 func getHttpHeads(c chan Url, wg *sync.WaitGroup) {
 	defer wg.Done()
 
@@ -51,12 +67,13 @@ func getHttpHeads(c chan Url, wg *sync.WaitGroup) {
 	var err error
 
 	for url := range c {
-		u := url.GetUrl()
+		u := url.Url()
 		log.Println(u)
 
 		var elapsed time.Duration
 		for j := 0; j < 5; j++ {
 			start := time.Now()
+
 			resp, err = http.Head(u)
 			if err != nil {
 				log.Println("Failed http HEAD on", u, err)
