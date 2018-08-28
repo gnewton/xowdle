@@ -1,6 +1,7 @@
 package main
 
 import (
+	"time"
 	//"errors"
 	//"context"
 	"log"
@@ -62,18 +63,27 @@ func main() {
 	}
 	//getHeadInfo(urls)
 
-
-	for i,_:= range urls{
+	for i, _ := range urls {
 		l, err := urls[i].GetRemoteSize()
-		if err != nil{
+		if err != nil {
 			log.Println(err)
+			continue
 		}
-		log.Println("Size=", l)
+		log.Println("Size=", l, " ", urls[i])
 		err = urls[i].SampleTime()
-		if err != nil{
+		if err != nil {
 			log.Println(err)
+			continue
 		}
-
+		if l > 0 && l < 1000000 {
+			log.Println("DOWNLOADING " + urls[i].Url())
+			r, err := urls[i].Get()
+			if err != nil {
+				log.Println(err)
+				continue
+			}
+			writeFile(r, "foo", time.Now())
+		}
 	}
 
 }

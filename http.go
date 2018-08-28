@@ -1,42 +1,53 @@
 package main
 
-import(
-	"log"
-	"io"
-	"time"
-	"net/http"
+import (
+	//	"log"
 	"errors"
+	"io"
+	"net/http"
+	"time"
 )
 
 type Http struct {
 	UrlBase
 }
 
-
-func (h *Http) Get() (io.ReadCloser, error){
+func (h *Http) Get() (io.ReadCloser, error) {
 	resp, err := getHead(h.url)
+	if err != nil {
+		if resp != nil {
+			h.statusCode = resp.StatusCode
+		}
+		return nil, err
+	}
 	h.remoteSize = resp.ContentLength
 	h.remoteSizeFromConnect = true
 	return resp.Body, err
-}		
+}
 
-func (h *Http) GetRemoteSize() (int64,error) {
-	if h.remoteSizeFromConnect{
+func (h *Http) GetRemoteSize() (int64, error) {
+	if h.remoteSizeFromConnect {
 		return h.remoteSize, nil
 	}
 	head, err := getHead(h.url)
-	if err != nil{
+	if head != nil {
+		h.statusCode = head.StatusCode
+	}
+	if err != nil {
 		return 0, err
 	}
+	if head.StatusCode != 200 {
+		return -1, errors.New("Non 200 http response; response=" + head.Status + "; " + h.url)
+	}
 	h.remoteSize = head.ContentLength
- 	h.remoteSizeFromConnect = true
+	h.remoteSizeFromConnect = true
 	return h.remoteSize, nil
 }
 
 const numHttpSamples = 5
 
-func (h *Http) SampleTime() error{
-	log.Println("SmapleTime: Starting", h.url)
+func (h *Http) SampleTime() error {
+	//log.Println("SmapleTime: Starting", h.url)
 	var err error
 	var resp *http.Response
 	var elapsed time.Duration
@@ -47,11 +58,11 @@ func (h *Http) SampleTime() error{
 			continue // we will try again
 		}
 		if resp.StatusCode != 200 {
-			err = errors.New("Http response is not 200; is: "+resp.Status + " for url="+h.url )
+			return errors.New("Http response is not 200; is: " + resp.Status + " for url=" + h.url)
 		}
 		elapsed = time.Since(start)
 	}
 	h.sampleTime = elapsed
-	log.Println(elapsed)
+	//log.Println(elapsed)
 	return err
 }

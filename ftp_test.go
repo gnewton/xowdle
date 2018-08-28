@@ -1,7 +1,7 @@
 package main
 
 import (
-	"log"
+	//"log"
 	"testing"
 )
 
@@ -10,11 +10,12 @@ func TestFtpSplit(t *testing.T) {
 
 	for i, _ := range urls {
 		url := urls[i]
-		host, dir, file := ftpSplit(url)
-		log.Println("url", url)
-		log.Println("host", host)
-		log.Println("dir", dir)
-		log.Println("file", file)
+		//host, dir, file := ftpSplit(url)
+		_, _, _ = ftpSplit(url)
+		// log.Println("url", url)
+		// log.Println("host", host)
+		// log.Println("dir", dir)
+		// log.Println("file", file)
 	}
 	//if err != nil {
 	//t.Error(err)

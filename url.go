@@ -2,10 +2,10 @@ package main
 
 import (
 	"errors"
+	"io"
 	"log"
 	"strings"
 	"time"
-	"io"
 )
 
 type Url interface {
@@ -14,39 +14,43 @@ type Url interface {
 	SetUrl(string)
 	GetRemoteSize() (int64, error)
 	GetSampleTime() time.Duration
+	GetResponseCode() int
 	SampleTime() error
 	Get() (io.ReadCloser, error)
 }
 
 type UrlBase struct {
-	url        string
-	remoteSize int64
+	url                   string
+	remoteSize            int64
 	remoteSizeFromConnect bool
-	sampleTime time.Duration
+	sampleTime            time.Duration
+	statusCode            int
 }
 
-func (u *UrlBase) Init() {
-	u.remoteSizeFromConnect = false
+func (u *UrlBase) GetResponseCode() int {
+	return u.statusCode
 }
 
 func (u *UrlBase) Url() string {
 	return u.url
 }
 
+func (u *UrlBase) Init() {
+
+}
+
 func (u *UrlBase) SetUrl(url string) {
 	u.url = url
 }
-
 
 func (u *UrlBase) GetSampleTime() time.Duration {
 	return u.sampleTime
 }
 
-
 func newUrl(url string) (Url, error) {
 	var newUrl Url
 	if strings.HasPrefix(url, "http") {
-		newUrl= new(Http)
+		newUrl = new(Http)
 	} else if strings.HasPrefix(url, "ftp://") {
 		newUrl = new(Ftp)
 	} else {
@@ -65,7 +69,7 @@ func newUrls(urls []string) ([]Url, error) {
 	for i, _ := range urls {
 		url := urls[i]
 		newu, err := newUrl(url)
-		if err != nil{
+		if err != nil {
 			return nil, err
 		}
 		resources = append(resources, newu)
